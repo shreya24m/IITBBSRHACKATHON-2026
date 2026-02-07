@@ -9,7 +9,6 @@ document.getElementById('canvas-container').appendChild(renderer.domElement);
 camera.position.set(0, 100, 250);
 camera.lookAt(0, 0, 0);
 
-// --- 1. Starfield ---
 const starCoords = [];
 for (let i = 0; i < 15000; i++) {
     starCoords.push((Math.random() - 0.5) * 2000, (Math.random() - 0.5) * 2000, (Math.random() - 0.5) * 2000);

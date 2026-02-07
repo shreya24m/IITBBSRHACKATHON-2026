@@ -1,94 +1,312 @@
-<div id="canvas-container"></div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AstroScan | Planetary Defense System</title>
+    <style>
+        :root {
+            --neon-blue: #00f2ff;
+            --alert-red: #ff3333;
+            --glass: rgba(0, 20, 40, 0.8);
+        }
 
-<div class="top-nav">
-    <div class="toggle-group">
-        <button class="toggle-btn" onclick="toggleFeature('orbits')">ORBIT PATHS</button>
-        <button class="toggle-btn" onclick="toggleFeature('labels')">OBJECT LABELS</button>
-        <button class="toggle-btn" onclick="toggleFeature('hazard')">HAZARD VIEW</button>
-        <button class="toggle-btn" onclick="toggleFeature('belt')">ASTEROID BELT</button>
-    </div>
-</div>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
 
-<div class="bottom-chat-container">
-    <div class="chat-window">
-        <div id="chat-box" class="chat-display">
-            <p class="bot-msg">Establishing secure link... Deep Space Network active. How can I assist, Commander?</p>
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* --- Top Navigation Toggles --- */
+        .top-nav {
+            position: fixed;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        .toggle-btn {
+            background: var(--glass);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .toggle-btn:hover {
+            background: var(--neon-blue);
+            color: #000;
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
+
+        .active-alert {
+            border-color: var(--alert-red) !important;
+            color: var(--alert-red) !important;
+            box-shadow: 0 0 15px var(--alert-red);
+        }
+
+        /* --- Bottom Chatbot & Search --- */
+        .chat-container {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 500px;
+            z-index: 10;
+            text-align: center;
+        }
+
+        .search-box {
+            background: var(--glass);
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        #chat-input {
+            width: 90%;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--neon-blue);
+            color: white;
+            padding: 10px;
+            font-size: 16px;
+            outline: none;
+            text-align: center;
+        }
+
+        #chat-feedback {
+            color: var(--neon-blue);
+            margin-top: 10px;
+            font-size: 14px;
+            height: 20px;
+            font-family: monospace;
+        }
+
+        /* --- Learn More Side Panel --- */
+        .side-panel {
+            position: fixed;
+            right: -400px;
+            top: 0;
+            width: 350px;
+            height: 100%;
+            background: rgba(0, 5, 10, 0.95);
+            border-left: 2px solid var(--neon-blue);
+            z-index: 20;
+            transition: 0.5s;
+            padding: 40px 20px;
+            color: white;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.8);
+        }
+
+        .side-panel.active {
+            right: 0;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: var(--neon-blue);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        h2 { color: var(--neon-blue); border-bottom: 1px solid var(--neon-blue); padding-bottom: 10px; }
+        p { line-height: 1.6; color: #ccc; }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <nav class="top-nav">
+        <button class="toggle-btn" id="unit-toggle">Unit: Metric</button>
+        <button class="toggle-btn" id="alert-toggle">Alert: OFF</button>
+        <button class="toggle-btn" id="grid-toggle">Grid Overlay</button>
+        <button class="toggle-btn" id="info-toggle">Learn More</button>
+    </nav>
+
+    <div class="chat-container">
+        <div class="search-box">
+            <input type="text" id="chat-input" placeholder="Query System (e.g., 'Locate Earth', 'Scan Belt')...">
+            <div id="chat-feedback">Deep Space Network: Standby...</div>
         </div>
+    </div>
+
+    <div id="learn-panel" class="side-panel">
+        <button class="close-btn" id="close-panel">×</button>
+        <h2>Mission Intel</h2>
+        <p><strong>NEO Tracker:</strong> Utilizing Near-Earth Object telemetry to monitor high-velocity debris.</p>
+        <p><strong>Alert Protocol:</strong> Red indicators signify objects with a collision probability index higher than 0.01%.</p>
+        <p><strong>Grid Sync:</strong> The map grid represents a 1:1,000,000 km spatial scale for accurate telemetry.</p>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- Scene Setup ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        camera.position.set(0, 20, 40);
+        controls.update();
+
+        // --- Lighting ---
+        const sunLight = new THREE.PointLight(0xffffff, 2, 500);
+        scene.add(sunLight);
+        scene.add(new THREE.AmbientLight(0x404040, 0.5));
+
+        // --- Celestial Objects ---
+        const sunGeo = new THREE.SphereGeometry(2, 32, 32);
+        const sunMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+        const sun = new THREE.Mesh(sunGeo, sunMat);
+        scene.add(sun);
+
+        const planets = [];
+        const createPlanet = (size, color, dist, speed) => {
+            const geo = new THREE.SphereGeometry(size, 24, 24);
+            const mat = new THREE.MeshStandardMaterial({ color: color });
+            const mesh = new THREE.Mesh(geo, mat);
+            
+            // Orbit Ring
+            const orbitGeo = new THREE.RingGeometry(dist - 0.05, dist + 0.05, 64);
+            const orbitMat = new THREE.MeshBasicMaterial({ color: 0x444444, side: THREE.DoubleSide });
+            const orbit = new THREE.Mesh(orbitGeo, orbitMat);
+            orbit.rotation.x = Math.PI / 2;
+            scene.add(orbit);
+
+            const data = { mesh, dist, speed, angle: Math.random() * Math.PI * 2 };
+            planets.push(data);
+            scene.add(mesh);
+            return data;
+        };
+
+        createPlanet(0.5, 0x00f2ff, 8, 0.01);  // Earth-like
+        createPlanet(0.8, 0xff5500, 14, 0.007); // Mars-like
+        createPlanet(1.2, 0xffccaa, 22, 0.005); // Jupiter-like
+
+        // --- Grid Overlay ---
+        const gridHelper = new THREE.GridHelper(100, 20, 0x00f2ff, 0x222222);
+        gridHelper.visible = false;
+        scene.add(gridHelper);
+
+        // --- Stars ---
+        const starGeo = new THREE.BufferGeometry();
+        const starVertices = [];
+        for(let i=0; i<5000; i++) {
+            starVertices.push((Math.random()-0.5)*1000, (Math.random()-0.5)*1000, (Math.random()-0.5)*1000);
+        }
+        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+        const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.7 });
+        scene.add(new THREE.Points(starGeo, starMat));
+
+        // --- UI Logic ---
+        const feedback = document.getElementById('chat-feedback');
         
-        <div class="search-wrapper">
-            <input type="text" id="chat-input" placeholder="Search asteroids or ask a question..." onkeypress="handleChat(event)">
-            <div class="glow-line"></div>
-        </div>
-    </div>
-</div>
+        window.toggleUnits = () => {
+            const btn = document.getElementById('unit-toggle');
+            btn.innerText = btn.innerText.includes('Metric') ? 'Unit: Imperial' : 'Unit: Metric';
+        };
 
-<style>
-    body { margin: 0; background: #000; overflow: hidden; font-family: 'Orbitron', sans-serif; }
+        window.toggleAlertMode = () => {
+            const btn = document.getElementById('alert-toggle');
+            const isActive = btn.classList.toggle('active-alert');
+            btn.innerText = isActive ? 'Alert: ACTIVE' : 'Alert: OFF';
+            sunMat.color.setHex(isActive ? 0xff0000 : 0xffcc00);
+            feedback.innerText = isActive ? "WARNING: NEO Proximity Detected" : "Deep Space Network: Standby...";
+        };
 
-    /* Top Horizontal Alignment */
-    .top-nav {
-        position: fixed;
-        top: 0; left: 0; width: 100%;
-        display: flex; justify-content: center;
-        padding: 20px; z-index: 100;
-        background: linear-gradient(to bottom, rgba(0,20,40,0.8), transparent);
-    }
-    .toggle-group { display: flex; gap: 15px; }
+        window.toggleGrid = () => {
+            gridHelper.visible = !gridHelper.visible;
+            document.getElementById('grid-toggle').classList.toggle('active-btn');
+        };
 
-    .toggle-btn {
-        background: rgba(0, 242, 255, 0.05);
-        border: 1px solid #00f2ff;
-        color: #00f2ff;
-        padding: 10px 20px;
-        cursor: pointer;
-        border-radius: 5px;
-        letter-spacing: 1px;
-        transition: 0.3s;
-    }
-    .toggle-btn:hover, .toggle-btn.active {
-        background: #00f2ff;
-        color: #000;
-        box-shadow: 0 0 15px #00f2ff;
-    }
+        window.toggleLearnPanel = () => {
+            document.getElementById('learn-panel').classList.toggle('active');
+        };
 
-    /* Bottom Chatbot Styling */
-    .bottom-chat-container {
-        position: fixed;
-        bottom: 30px; left: 50%;
-        transform: translateX(-50%);
-        width: 600px; z-index: 100;
-    }
-    .chat-window {
-        background: rgba(0, 10, 20, 0.8);
-        backdrop-filter: blur(15px);
-        border: 1px solid rgba(0, 242, 255, 0.3);
-        border-radius: 20px;
-        padding: 20px;
-        box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
-    }
-    .chat-display {
-        height: 120px; overflow-y: auto;
-        color: white; font-size: 14px;
-        margin-bottom: 15px; text-align: center;
-    }
+        // Event Listeners for buttons
+        document.getElementById('unit-toggle').onclick = window.toggleUnits;
+        document.getElementById('alert-toggle').onclick = window.toggleAlertMode;
+        document.getElementById('grid-toggle').onclick = window.toggleGrid;
+        document.getElementById('info-toggle').onclick = window.toggleLearnPanel;
+        document.getElementById('close-panel').onclick = window.toggleLearnPanel;
 
-    /* Search Bar Design */
-    .search-wrapper { position: relative; width: 100%; }
-    #chat-input {
-        width: 100%;
-        padding: 15px;
-        background: rgba(255, 255, 255, 0.05);
-        border: none;
-        border-bottom: 2px solid #00f2ff;
-        color: white;
-        text-align: center;
-        outline: none;
-        font-size: 16px;
-    }
-    .glow-line {
-        position: absolute; bottom: 0; left: 0;
-        width: 0%; height: 2px;
-        background: #fff; transition: 0.5s;
-    }
-    #chat-input:focus + .glow-line { width: 100%; }
-</style>
+        // Search Handling
+        document.getElementById('chat-input').onkeypress = (e) => {
+            if (e.key === 'Enter') {
+                const val = e.target.value.toLowerCase();
+                feedback.innerText = `Scanning for: "${val}"...`;
+                setTimeout(() => { feedback.innerText = `No hostile objects found in ${val} sector.`; }, 1500);
+            }
+        };
+
+        // --- Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            planets.forEach(p => {
+                p.angle += p.speed;
+                p.mesh.position.x = Math.cos(p.angle) * p.dist;
+                p.mesh.position.z = Math.sin(p.angle) * p.dist;
+                p.mesh.rotation.y += 0.01;
+            });
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+    <script src="dashboard.js"></script>
+
+</body>
+</html>
+    
