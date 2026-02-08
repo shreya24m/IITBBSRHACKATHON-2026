@@ -1,8 +1,33 @@
 {
   "dependencies": {
+    "axios": "^1.13.4",
+    "cors": "^2.8.6",
+    "dotenv": "^17.2.4",
+    "express": "^5.2.1",
+    "multer": "^2.0.2",
     "react-router-dom": "^7.13.0"
   },
   "devDependencies": {
     "vite": "^7.3.1"
-  }
+  },
+  "name": "iitbbsrhackathon-2026",
+  "version": "1.0.0",
+  "description": "Hackathon project built at IIT Bhubaneswar on 7 Feb 2026. This repository contains the collaborative codebase developed by the team during the hackathon.",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shreya24m/IITBBSRHACKATHON-2026.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/shreya24m/IITBBSRHACKATHON-2026/issues"
+  },
+  "homepage": "https://github.com/shreya24m/IITBBSRHACKATHON-2026#readme"
 }

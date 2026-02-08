@@ -354,13 +354,15 @@ Asteroid search ready…
         animate();
 
 // ===========================
-// ASTEROID SEARCH FRONTEND
+// FRONTEND → BACKEND FETCH
 // ===========================
 
-document.getElementById("asteroid-btn").onclick = () => {
+document.getElementById("asteroid-btn").onclick = async () => {
 
     const name =
-        document.getElementById("asteroid-input").value;
+        document.getElementById("asteroid-input")
+        .value
+        .toLowerCase();
 
     const display =
         document.getElementById("asteroid-display");
@@ -370,12 +372,80 @@ document.getElementById("asteroid-btn").onclick = () => {
         return;
     }
 
-    display.innerText =
-        `🔍 Searching asteroid: ${name}`;
+    display.innerText = "🚀 Searching backend database...";
+
+    try {
+
+        // call YOUR backend
+        const res = await fetch(
+            "http://localhost:3000/api/asteroids"
+        );
+
+        const data = await res.json();
+
+        let found = null;
+        
+
+const neo = data.near_earth_objects;
+
+for (const date in neo) {
+
+    const day = neo[date];
+
+    if (!Array.isArray(day)) continue;
+
+    for (let i = 0; i < day.length; i++) {
+
+        const ast = day[i];
+
+        if (ast.name.toLowerCase().includes(name)) {
+            found = ast;
+            break;
+        }
+
+    }
+
+    if (found) break;
+}
+
+
+       
+      
+
+        if (!found) {
+            display.innerText =
+                "❌ Asteroid not found";
+            return;
+        }
+
+        const close =
+            found.close_approach_data[0];
+
+        display.innerHTML = `
+🚀 ${found.name}
+
+Hazardous:
+${found.is_potentially_hazardous_asteroid ? "YES ⚠️" : "No"}
+
+Distance:
+${parseInt(close.miss_distance.kilometers)} km
+
+Velocity:
+${parseInt(close.relative_velocity.kilometers_per_hour)} km/h
+`;
+
+    } catch (err) {
+
+        display.innerText =
+            "⚠ Backend fetch failed";
+
+        console.error(err);
+    }
+
 };
 
 </script>
 
-    <script src="dashboard.js"></script>
+    <script type="module" src="dashboard.js"></script>
     </body>
     </html>
