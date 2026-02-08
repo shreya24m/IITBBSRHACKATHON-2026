@@ -32,7 +32,7 @@
 
         /* --- Top Navigation Toggles --- */
         .top-nav {
-            position: fixed;
+           position: fixed;
             top: 20px;
             width: 100%;
             display: flex;
@@ -147,11 +147,44 @@
     <div id="canvas-container"></div>
 
     <nav class="top-nav">
-        <button class="toggle-btn" id="unit-toggle">Unit: Metric</button>
-        <button class="toggle-btn" id="alert-toggle">Alert: OFF</button>
-        <button class="toggle-btn" id="grid-toggle">Grid Overlay</button>
-        <button class="toggle-btn" id="info-toggle">Learn More</button>
-    </nav>
+
+    <button class="toggle-btn" id="unit-toggle">Unit: Metric</button>
+    <button class="toggle-btn" id="alert-toggle">Alert: OFF</button>
+    <button class="toggle-btn" id="grid-toggle">Grid Overlay</button>
+    <button class="toggle-btn" id="info-toggle">Learn More</button>
+
+    <!-- ⭐ Asteroid Identifier Toggle -->
+    <div style="
+        display:flex;
+        align-items:center;
+        gap:8px;
+        background:rgba(0,20,40,0.8);
+        border:1px solid #00f2ff;
+        padding:6px 10px;
+        border-radius:8px;
+        backdrop-filter:blur(5px);
+    ">
+
+        <input
+            id="asteroid-input"
+            placeholder="Asteroid name..."
+            style="
+                background:transparent;
+                border:none;
+                color:white;
+                outline:none;
+                width:150px;
+            "
+        >
+
+        <button class="toggle-btn" id="asteroid-btn">
+            Identify
+        </button>
+
+    </div>
+
+</nav>
+
 
     <div class="chat-container">
         <div class="search-box">
@@ -161,6 +194,21 @@
     </div>
 
     <div id="learn-panel" class="side-panel">
+      <div id="asteroid-display" style="
+    position:fixed;
+    top:110px;
+    left:50%;
+    transform:translateX(-50%);
+    background:rgba(0,0,0,0.75);
+    color:#00f2ff;
+    padding:12px;
+    border-radius:10px;
+    font-family:monospace;
+    z-index:15;
+">
+Asteroid search ready…
+</div>
+
         <button class="close-btn" id="close-panel">×</button>
         <h2>Mission Intel</h2>
         <p><strong>NEO Tracker:</strong> Utilizing Near-Earth Object telemetry to monitor high-velocity debris.</p>
@@ -304,9 +352,30 @@
         });
 
         animate();
-    </script>
-    <script src="dashboard.js"></script>
 
-</body>
-</html>
-    
+// ===========================
+// ASTEROID SEARCH FRONTEND
+// ===========================
+
+document.getElementById("asteroid-btn").onclick = () => {
+
+    const name =
+        document.getElementById("asteroid-input").value;
+
+    const display =
+        document.getElementById("asteroid-display");
+
+    if (!name) {
+        display.innerText = "⚠ Enter asteroid name";
+        return;
+    }
+
+    display.innerText =
+        `🔍 Searching asteroid: ${name}`;
+};
+
+</script>
+
+    <script src="dashboard.js"></script>
+    </body>
+    </html>

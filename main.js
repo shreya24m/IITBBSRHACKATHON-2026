@@ -109,4 +109,7 @@ loginBtn.addEventListener('click', () => {
   .then(data => {
     document.getElementById("content").innerHTML = data;
   });
+
+  fetch("http://localhost:3000/api/alerts")
+
 });
