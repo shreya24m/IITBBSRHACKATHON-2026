@@ -146,23 +146,51 @@ window.toggleLearnPanel = () => {
 
 /* ================= CAMERA SEARCH ================= */
 
-window.handleSearch = (e) => {
+window.handleSearch = async (e) => {
 
   if (e.key === "Enter") {
 
-    const q = e.target.value.toLowerCase();
+    const q = e.target.value;
+    if (!q) return;
 
-    document.getElementById('chat-feedback')
-      .innerText = `Searching: ${q}`;
+    const feedback = document.getElementById('chat-feedback');
+    feedback.innerText = `Transmitting: "${q}"...`;
 
-    if (q.includes("earth")) {
+    // Check for local camera commands first
+    if (q.toLowerCase().includes("earth")) {
       camera.position.set(320, 50, 350);
       controls.target.copy(earth.position);
+      feedback.innerText = "Camera: Locked on Earth Sector.";
+      e.target.value = "";
+      return;
+    }
+
+    // Backend Chat Fetch
+    try {
+      const res = await fetch("http://127.0.0.1:3000/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: q })
+      });
+      const data = await res.json();
+
+      // Simulating typing effect or delay if needed, but for now instant
+      feedback.innerText = `AI: ${data.response}`;
+
+    } catch (err) {
+      feedback.innerText = "Error: Uplink Lost.";
+      console.error(err);
     }
 
     e.target.value = "";
   }
 };
+
+// Bind to input if it exists directly (cleanup overlap)
+const chatInput = document.getElementById('chat-input');
+if (chatInput) {
+  chatInput.onkeypress = window.handleSearch;
+}
 
 /* ===================================================
 🚀 ASTEROID DATABASE FETCH — NO forEach VERSION

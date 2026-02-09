@@ -25,7 +25,7 @@ git clone https://github.com/shreya24m/IITBBSRHACKATHON-2026.git
 pip install fastapi uvicorn tensorflow pillow numpy requests
 3. Configure the NASA API Key
 
-NASA_API_KEY = "mn9LMCssE21dUvtavYPvy8nBQH0dHwi3o7ekoMyl"
+NASA_API_KEY = "Dy7ip1RgXTL4uVeGHzybkNXMP8qa4EnzqOTaky9H"
 4. Launch the Command Center (Backend)
 
 python main.py
@@ -42,4 +42,3 @@ Python
 MongoDB
 TensorFlow
 Keras
-

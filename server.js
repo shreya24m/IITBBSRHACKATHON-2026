@@ -59,36 +59,36 @@ let cacheTime = 0;
 
 app.get("/api/asteroids", async (req, res) => {
 
-  const now = Date.now();
+    const now = Date.now();
 
-  if (cache && now - cacheTime < 60000) {
-    console.log("Serving cached NASA data");
-    return res.json(cache);
-  }
+    if (cache && now - cacheTime < 60000) {
+        console.log("Serving cached NASA data");
+        return res.json(cache);
+    }
 
-  try {
+    try {
 
-    console.log("Fetching NASA data from NASA API...");
+        console.log("Fetching NASA data from NASA API...");
 
-    const nasaResponse = await axios.get(
-      `https://api.nasa.gov/neo/rest/v1/feed?api_key=${NASA_KEY}`
-    );
+        const nasaResponse = await axios.get(
+            `https://api.nasa.gov/neo/rest/v1/feed?api_key=${NASA_KEY}`
+        );
 
-    cache = nasaResponse.data;
-    cacheTime = now;
+        cache = nasaResponse.data;
+        cacheTime = now;
 
-    res.json(cache);
+        res.json(cache);
 
-  } catch (err) {
+    } catch (err) {
 
-    console.error("NASA ERROR:", err.message);
+        console.error("NASA ERROR:", err.message);
 
-    res.status(500).json({
-      error: "NASA fetch failed",
-      details: err.message
-    });
+        res.status(500).json({
+            error: "NASA fetch failed",
+            details: err.message
+        });
 
-  }
+    }
 
 });
 
@@ -114,7 +114,7 @@ app.get("/api/map-data", async (req, res) => {
                     hazardous: a.is_potentially_hazardous_asteroid,
                     distance_km:
                         a.close_approach_data[0]
-                        .miss_distance.kilometers
+                            .miss_distance.kilometers
                 });
 
             });
@@ -136,6 +136,81 @@ app.get("/api/map-data", async (req, res) => {
 });
 
 
+const getSafeResponse = (text) => {
+    // Simple sanitization
+    return text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+};
+
+app.post("/api/chat", async (req, res) => {
+    const { query } = req.body;
+    if (!query) return res.json({ response: "Please ask a question." });
+
+    const q = query.toLowerCase();
+
+    // Ensure we have data
+    if (!cache) {
+        try {
+            const neo = await getAsteroids();
+            cache = { near_earth_objects: neo };
+        } catch (e) {
+            return res.json({ response: "System initializing... please try again in a moment." });
+        }
+    }
+
+    const data = cache.near_earth_objects;
+    let allAsteroids = [];
+    Object.values(data).forEach(day => allAsteroids.push(...day));
+
+    // LOGIC
+    if (q.includes("limit") || q.includes("secret") || q.includes("password")) {
+        return res.json({ response: "ACCESS DENIED. Classified information." });
+    }
+
+    if (q.includes("hello") || q.includes("hi ")) {
+        return res.json({ response: "Greetings. I am AstroScan AI. Ask me about asteroid data." });
+    }
+
+    if (q.includes("how many") || q.includes("count")) {
+        return res.json({ response: `Current scan detects ${allAsteroids.length} near-earth objects in this sector.` });
+    }
+
+    if (q.includes("hazardous") || q.includes("danger")) {
+        const hazardous = allAsteroids.filter(a => a.is_potentially_hazardous_asteroid);
+        const names = hazardous.map(a => a.name).slice(0, 3).join(", ");
+        return res.json({ response: `WARNING: ${hazardous.length} hazardous objects detected. Notable: ${names || "None"}...` });
+    }
+
+    if (q.includes("closest") || q.includes("nearest")) {
+        const sorted = allAsteroids.sort((a, b) =>
+            parseFloat(a.close_approach_data[0].miss_distance.kilometers) -
+            parseFloat(b.close_approach_data[0].miss_distance.kilometers)
+        );
+        const closest = sorted[0];
+        const dist = parseInt(closest.close_approach_data[0].miss_distance.kilometers);
+        return res.json({ response: `Closest object is ${closest.name} at ${dist} km.` });
+    }
+
+    if (q.includes("fastest")) {
+        const sorted = allAsteroids.sort((a, b) =>
+            parseFloat(b.close_approach_data[0].relative_velocity.kilometers_per_hour) -
+            parseFloat(a.close_approach_data[0].relative_velocity.kilometers_per_hour)
+        );
+        const fastest = sorted[0];
+        const speed = parseInt(fastest.close_approach_data[0].relative_velocity.kilometers_per_hour);
+        return res.json({ response: `Fastest object is ${fastest.name} traveling at ${speed} km/h.` });
+    }
+
+    // Specific asteroid lookup
+    const found = allAsteroids.find(a => q.includes(a.name.toLowerCase().replace(/[()]/g, "")));
+    if (found) {
+        const dist = parseInt(found.close_approach_data[0].miss_distance.kilometers);
+        const isHaz = found.is_potentially_hazardous_asteroid ? "HAZARDOUS" : "safe";
+        return res.json({ response: `Object ${found.name}: Status ${isHaz}. Distance: ${dist} km.` });
+    }
+
+    return res.json({ response: "Query unclear. I can analyze: 'count', 'hazardous', 'closest', 'fastest', or specific asteroid names." });
+});
+
 // =============================
 // ALERT MODE ROUTE
 // =============================
@@ -153,7 +228,7 @@ app.get("/api/alerts", async (req, res) => {
 
                 const dist = parseFloat(
                     a.close_approach_data[0]
-                    .miss_distance.kilometers
+                        .miss_distance.kilometers
                 );
 
                 if (dist < 500000) {
@@ -162,7 +237,7 @@ app.get("/api/alerts", async (req, res) => {
                         name: a.name,
                         distance_km: dist,
                         hazardous:
-                        a.is_potentially_hazardous_asteroid
+                            a.is_potentially_hazardous_asteroid
                     });
 
                 }
